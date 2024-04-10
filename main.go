@@ -31,4 +31,6 @@ func main() {
 	 routes.InvoiceRoutes(router);
 
 
+	 router.Run(":"+port)
+
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/middleware"
 )
 
 func main() {
@@ -18,5 +19,16 @@ func main() {
 	router := gin.New()
 
 	router.Use(gin.Logger())
+
+	 routes.UserRouter(router);
+	 routes.Use(middleware.Authenticate());
+
+	 routes.FoodRoutes(router);
+	 routes.MenuRoutes(router);
+	 routes.TableRoutes(router);
+	 routes.OrderRoutes(router);
+	 routes.OrderItemRoutes(router);
+	 routes.InvoiceRoutes(router);
+
 
 }

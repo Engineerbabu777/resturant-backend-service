@@ -34,3 +34,10 @@ func DBInit()  *mongo.Client{
 
 	return client;
 }
+
+
+var Client *mongo.Client = DBInit();
+
+func OpenCollection(client *mongo.Client, collectionName string) *mongo.Collection {
+    return client.Database("resturant-db").Collection(collectionName)
+}

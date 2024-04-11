@@ -4,7 +4,7 @@ import "github.com/gin-gonic/gin"
 
 
 
-func foodRoutes(incomingRoutes *gin.Engine){
+func FoodRoutes(incomingRoutes *gin.Engine){
 	incomingRoutes.GET("/foods", controller.GetFoods());
 	incomingRoutes.GET("/users/:food_id", controller.GetFood());
 	incomingRoutes.PUT("/foods", controller.CreateFood());

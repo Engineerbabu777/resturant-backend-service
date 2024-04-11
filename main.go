@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"resturant-backend/routes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo/middleware"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var foodCollection *mongo.Collection = database.OpenCollection(database.Client, "food")
@@ -21,8 +23,8 @@ func main() {
 
 	router.Use(gin.Logger())
 
-	 routes.UserRouter(router);
-	 routes.Use(middleware.Authenticate());
+	 routes.UserRoutes(router);
+	 router.Use(middleware.Authenticate());
 
 	 routes.FoodRoutes(router);
 	 routes.MenuRoutes(router);

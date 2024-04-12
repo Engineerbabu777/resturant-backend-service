@@ -8,13 +8,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var foodCollection *mongo.Collection = database.OpenCollection(database.Client, "food")
-
+ var validate = validator.New()
+ 
 func GetFoods() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -23,7 +25,7 @@ func GetFoods() gin.HandlerFunc {
 
 func GetFood() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)  
 		foodId := c.Param("food_id")
 		var food models.Food
 
@@ -52,7 +54,7 @@ func CreateFood() gin.HandlerFunc {
 			c.JSON(504, gin.H{"error": validationErr.Error()})
 			return;
 		}
-		err := menuCollection.FindOne(ctx, bson.M{"menu_id": food.MenuId}).Decode(&menu)
+		err := menuCollection.FindOne(ctx, bson.M{"menu_id": food.Menu_id}).Decode(&menu)
 		defer cancel()
 		if err != nil {
 		    msg := fmt.Sprintf("menu was not food");

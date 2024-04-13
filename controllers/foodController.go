@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"math"
 	"resturant-backend/database"
 	"resturant-backend/models"
 	"strconv"
@@ -39,7 +40,8 @@ startIndex, err = strconv.Atoi(c.Query("startIndex"))
 		matchStage := bson.D{{"$match", bson.D{{}}}}
 		groupStage := bson.D{{"$group", bson.D{
 		    {"_id",bson.D{{"_id","null"}}}, 
-			{"total_count", bson.D{{"$sum", 1}}}, {"data", bson.D{{"$push", "$$ROOT"}}}
+			{"total_count", bson.D{{"$sum", 1}}}, 
+			{"data", bson.D{{"$push", "$$ROOT"}}}
 		}}}
 		projectStage := bson.D{
 			{"$project", bson.D{
@@ -127,14 +129,84 @@ func CreateFood() gin.HandlerFunc {
 
 func UpdateFood() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var food models.Food
+		var menu models.Menu
+
+		foodId := c.Param("food_id")
+
+		if err := c.BindJSON(&menu); err != nil {
+			c.JSON(504, gin.H{"error": err.Error()})
+			return
+		}
+
+		var updateObj primitive.D;
+
+		if food.Name != nil {
+updateObj = append(updateObj, bson.E{"name", name.Name})
+		}
+
+		if food.Price != nil{
+			updateObj = append(updateObj, bson.E{"price", name.Price})
+
+		}
+
+		if food.Food_Image != nil {
+			updateObj = append(updateObj, bson.E{"food_image", name.Food_Image})
+
+		}
+
+		if food.Menu_id != nil {
+			err := menuColection.FindOne(ctx, bson.M{"menu_id": food.Menu_id}).Decode(&menu)
+
+			defer cancel();
+
+			if err!= nil {
+				msg := fmt.Sprintf("message: menu was not found");
+				c.JSOn(504, gin.H{"error":msg})
+				return;
+			}
+			updateObj = append(updateObj, bson.E{"menu", food.Price})
+
+		}
+
+		menu.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		updateObj = append(updateObj, bson.E{"updated_at", food.Updated_at})
+
+		upsert := true;
+		filter := bson.M{"food_id":foodId}
+
+		opt := options.UpdateOptions{
+			Upsert: &upsert,
+		}
+
+		result, err := foodCollection.UpdateOne(
+			ctx,
+			filter,
+			bson.D{
+				{"$set", updateObj},
+			},
+			&opt,
+		)
+
+		if err != nil {
+			msg := fmt.Sprintf("food item was not updated")
+			c.JSON(504, gin.H{"error": msg})
+			return
+		}
+
+		defer cancel()
+
+		c.JSON(200, result)
 
 	}
 }
 
 func round(num float64) int {
-
+  return int(num + math.Copysign(0.5, num))
 }
 
 func toFixed(num float64, precision int) float64 {
-
+output := math.Pow(10, float64(precision));
+return float64(round(num*output))/output
 }

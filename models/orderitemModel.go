@@ -9,7 +9,7 @@ import (
 type OrderItem struct {
 	ID            primitive.ObjectID `bson:"_id"`
 	Quantity      *string            `json:"quantity" validate:"required,eq=5|ep=M|eq=L"`
-	Unit_Price    *float64           `json:"unit_price" validate:"required`
+	Unit_Price    *float64           `json:"unit_price" validate:"required"`
 	Created_at    time.Time          `json:"created_at"`
 	Updated_at    time.Time          `json:"updated_at"`
 	Food_id       *string            `json:"food_id" validate:"required"`

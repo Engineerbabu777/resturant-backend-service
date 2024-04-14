@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"resturant-backend/database"
@@ -100,6 +101,36 @@ func CreateInvoice() gin.HandlerFunc {
 			c.JSON(504, gin.H{"error": err.Error()})
 			return
 		}
+		status := "PENDING"
+
+		if invoice.Payment_status == nil {
+			invoice.Payment_status = &status
+		} 
+
+		invoice.Payment_due_date,_ = time.Parse(time.RFC3339, time.Now().AddDate(0,0,1).Format(time.RFC3339))
+		invoice.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		invoice.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+		// create invoice id!
+		invoice.ID = primitive.NewObjectID();
+		invoice.Invoice_id = invoice.ID.Hex()
+		validationErr := validate.Struct(invoice);
+		if validationErr != nil {
+			c.JSON(504, gin.H{"error": validationErr.Error()})
+			return;
+		}
+		
+		result, insertErr := invoiceCollection.InsertOne(ctx, invoice);
+		if insertErr != nil {
+			msg := fmt.Sprintf("invoice itesm was not created!");
+			c.JSON(504, gin.H{"error": msg})
+			return
+		}
+
+		defer cancel();
+
+		c.JSON(200, result);
+
 	}
 }
 
@@ -139,7 +170,7 @@ func UpdateInvoice() gin.HandlerFunc {
 
 		if invoice.Payment_status == nil {
 			invoice.Payment_status = &status
-		}
+		} 
 
 		result, err := invoiceCollection.UpdateOne(
 			ctx,

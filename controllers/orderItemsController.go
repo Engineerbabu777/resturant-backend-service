@@ -69,6 +69,21 @@ func ItemsByOrder(id string) (OrderItems []primitive.M, err error) {
 
 func GetOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)  
+
+		orderItemId :=  c.Param("order_item_id");
+
+		var orderItem models.OrderItem;
+
+		err := orderCollection.FindOne(ctx, bson.M{"orderItem_id": orderItemId}).Decode(&orderItem);
+		defer cancel();
+
+		if err!= nil {
+			c.JSON(504, gin.H{"error": err.Error()})
+			return;
+		}
+
+		c.JSON(200, orderItem)
 
 	}
 }

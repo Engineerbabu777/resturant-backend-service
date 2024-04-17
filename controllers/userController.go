@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"resturant-backend/database"
@@ -11,7 +12,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 
@@ -151,17 +154,69 @@ func Signup() gin.HandlerFunc {
 	}
 }
 
- 
-func Login()gin.HandlerFunc{
-	return func(c *gin.Context){
-	 
+
+func Login() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var user models.User
+		var foundUser models.User
+
+		//convert the login data from postman which is in JSON to golang readable format
+
+		if err := c.BindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		//find a user with that email and see if that user even exists
+
+		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
+		defer cancel()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found, login seems to be incorrect"})
+			return
+		}
+
+		//then you will verify the password
+
+		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
+		defer cancel()
+		if passwordIsValid != true {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			return
+		}
+
+		//if all goes well, then you'll generate tokens
+
+		token, refreshToken, _ := helper.GenerateAllTokens(*foundUser.Email, *foundUser.First_name, *foundUser.Last_name, foundUser.User_id)
+
+		//update tokens - token and refersh token
+		helper.UpdateAllTokens(token, refreshToken, foundUser.User_id)
+
+		//return statusOK
+		c.JSON(http.StatusOK, foundUser)
 	}
- }
+}
 
- func HashPassword(password string) string{
+func HashPassword(password string) string {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		log.Panic(err)
+	}
 
- }
+	return string(bytes)
+}
 
- func VerifyPassword(password string,hashedPassword string) bool{
-	
- }
+func VerifyPassword(userPassword string, providedPassword string) (bool, string) {
+
+	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
+	check := true
+	msg := ""
+
+	if err != nil {
+		msg = fmt.Sprintf("login or password is incorrect")
+		check = false
+	}
+	return check, msg
+}
